@@ -4,7 +4,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # install dependencies
-COPY package*.json ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
 RUN npm install -g pnpm
 RUN pnpm install
 
