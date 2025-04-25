@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 3000
 
 # start in dev mode
-CMD ["pnpm", "run", "start:dev"]
+CMD pnpm run start:dev
