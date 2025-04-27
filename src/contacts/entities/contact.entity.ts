@@ -19,5 +19,5 @@ export class Contact extends BaseEntity {
   name: string;
 
   @Column()
-  company: string;
+  age: number;
 }
