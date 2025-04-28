@@ -3,6 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ContactsModule } from './contacts/contacts.module';
 import { BulkActionModule } from './bulk-action/bulk-action.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BulkAction } from './bulk-action/entities/bulk-action.entity';
+import { BulkActionBatch } from './bulk-action/entities/bulk-action-batch.entity';
+import { BulkActionItem } from './bulk-action/entities/bulk-action-items.entity';
+import { Contact } from './contacts/entities/contact.entity';
 
 @Module({
   imports: [
@@ -20,7 +24,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         username: configService.get('DB_USER'),
         password: configService.get('DB_PASSWORD'),
         synchronize: configService.get('DB_SYNC') === 'true',
-        entities: [],
+        entities: [
+          BulkAction,
+          BulkActionBatch,
+          BulkActionItem,
+          Contact,
+        ],
       }),
     }),
     BulkActionModule,
