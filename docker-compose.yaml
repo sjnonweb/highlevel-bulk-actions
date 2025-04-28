@@ -10,6 +10,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - upload_data:/data/uploads
     environment:
       - NODE_ENV=development
     restart: unless-stopped
@@ -31,3 +32,4 @@ services:
 
 volumes:
   postgres_data:
+  upload_data:
