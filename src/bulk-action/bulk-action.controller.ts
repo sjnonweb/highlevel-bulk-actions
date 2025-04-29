@@ -1,5 +1,7 @@
 import {
-  Controller, Get, Post, UploadedFile, UseInterceptors,
+  Controller, Get, Post,
+  UploadedFile,
+  UseInterceptors,
   ParseFilePipe,
   HttpException,
   HttpStatus,
@@ -10,6 +12,8 @@ import { BulkAction } from './entities/bulk-action.entity';
 import { BulkActionService } from './bulk-action.service';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
+import * as path from 'path';
+import neatCsv from 'neat-csv';
 
 const UPLOAD_DIRECTORY = process.env.UPLOAD_DIRECTORY || '/data/uploads';
 
@@ -41,7 +45,10 @@ export class BulkActionController {
           cb(null, UPLOAD_DIRECTORY);
         },
         filename: (req, file, cb) => {
-          const filename = `${file.originalname}-${Date.now()}`;
+          const fileSuffix =  Math.round(Math.random() * 1e9);
+          const ext = path.extname(file.originalname)
+          const base = path.basename(file.originalname, ext)
+          const filename = `${base}-${fileSuffix}${ext}`;
           cb(null, filename);
         },
       }),
@@ -61,8 +68,10 @@ export class BulkActionController {
       }),
     )
     file: Express.Multer.File,
-  ): Promise<string> {
-    const fileContent = fs.readFileSync(file.path, 'utf-8');
-    return `file-${file.originalname} ${file.mimetype} ${fileContent}`;
+  ): Promise<any> {
+    const fileStream = fs.createReadStream(file.path)
+    const parsed = await neatCsv(fileStream);
+    fileStream.close()
+    return parsed;
   }
 }
