@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post,
+  Controller, Get, Post, Body,
   UploadedFile,
   UseInterceptors,
   ParseFilePipe,
@@ -8,12 +8,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { BulkAction } from './entities/bulk-action.entity';
-import { BulkActionService } from './bulk-action.service';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
-import neatCsv from 'neat-csv';
+import { BulkAction } from './entities/bulk-action.entity';
+import { BulkActionService } from './bulk-action.service';
+import { BulkActionCreateDto } from './dto/bulk-action-create.dto';
+import { BulkActionResponseDto } from './dto/bulk-action-response.dto';
 
 const UPLOAD_DIRECTORY = process.env.UPLOAD_DIRECTORY || '/data/uploads';
 
@@ -68,10 +69,14 @@ export class BulkActionController {
       }),
     )
     file: Express.Multer.File,
-  ): Promise<any> {
-    const fileStream = fs.createReadStream(file.path)
-    const parsed = await neatCsv(fileStream);
-    fileStream.close()
-    return parsed;
+    @Body() createBulkActionDto: BulkActionCreateDto,
+  ): Promise<BulkActionResponseDto> {
+    const parsed = await this.bulkActionService.parseCsvFile(file.path)
+    const resp = await this.bulkActionService.save(
+      createBulkActionDto,
+      file.path,
+      parsed.length,
+    );
+    return resp;
   }
 }
