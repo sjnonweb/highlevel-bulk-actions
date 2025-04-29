@@ -6,6 +6,7 @@ import {
 import { BulkActionStatus } from 'src/common/enums/bulk-action-status.enum';
 import { BulkActionBatch } from './bulk-action-batch.entity';
 import { BulkActionItem } from './bulk-action-items.entity';
+import { BulkActionEntityType } from 'src/common/enums/bulk-action-entity-type.enum';
 import { BaseEntity } from 'src/common/entities/base.entity';
 
 @Entity()
@@ -16,8 +17,14 @@ export class BulkAction extends BaseEntity {
   @Column({ nullable: true })
   scheduledFor?: Date;
 
+  @Column({
+    type: 'enum',
+    enum: BulkActionEntityType,
+  })
+  entityType: BulkActionEntityType;
+
   @Column()
-  entityType: string;
+  file: string;
 
   @Column({
     type: 'enum',
