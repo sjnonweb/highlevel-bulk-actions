@@ -72,7 +72,7 @@ export class BulkActionController {
     @Body() createBulkActionDto: BulkActionCreateDto,
   ): Promise<BulkActionResponseDto> {
     const parsed = await this.bulkActionService.parseCsvFile(file.path)
-    const resp = await this.bulkActionService.save(
+    const resp = await this.bulkActionService.create(
       createBulkActionDto,
       file.path,
       parsed.length,
