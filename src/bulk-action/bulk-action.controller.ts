@@ -29,6 +29,11 @@ export class BulkActionController {
     return this.bulkActionService.findAll();
   }
 
+  @Get('jobs')
+  async getJobs(): Promise<any> {
+    return await this.bulkActionService.getAllJobs();
+  }
+
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {

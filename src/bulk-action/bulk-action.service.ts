@@ -3,11 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BulkAction } from './entities/bulk-action.entity';
 import * as fs from 'fs';
-import neatCsv from 'neat-csv';
+import { parse } from 'fast-csv';
 import { BulkActionCreateDto } from './dto/bulk-action-create.dto';
 import { BulkActionResponseDto } from './dto/bulk-action-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { Queue } from 'bullmq';
+import { Queue, JobType } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
@@ -40,18 +40,19 @@ export class BulkActionService {
     return plainToInstance(BulkActionResponseDto, bulkAction);
   }
 
+  async getAllJobs(): Promise<any> {
+    const status: JobType[] = ['waiting', 'active', 'completed', 'failed', 'delayed'];
+    return await this.bulkActionQueue.getJobs(status);
+  }
+
   async parseCsvFile(path: string): Promise<Record<string, string>[]> {
-    let fileStream = fs.createReadStream(path);
-    try {
-      const parsed = await neatCsv(fileStream);
-      return parsed;
-    } catch (error) {
-      console.log(error);
-      throw error;
-    } finally {
-      if (fileStream) {
-        fileStream.close();
-      }
-    }
+    return new Promise((resolve, reject) => {
+      const results: any[] = [];
+      fs.createReadStream(path)
+        .pipe(parse({ headers: true }))
+        .on('error', (error) => reject(error))
+        .on('data', (row) => results.push(row))
+        .on('end', () => resolve(results));
+    });
   }
 }

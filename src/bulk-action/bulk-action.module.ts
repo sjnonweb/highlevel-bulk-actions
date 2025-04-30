@@ -10,7 +10,6 @@ import { BullModule } from '@nestjs/bullmq';
     TypeOrmModule.forFeature([BulkAction]),
     BullModule.registerQueue(
       { name: 'bulk-action' },
-      { name: 'bulk-action-batch' },
     ),
   ],
   providers: [BulkActionService],
