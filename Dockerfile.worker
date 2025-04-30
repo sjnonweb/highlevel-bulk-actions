@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+# set current directory
+WORKDIR /app
+
+# install dependencies
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+RUN npm install -g pnpm
+RUN pnpm install
+
+# bundle app source
+COPY . .
+
+# start in dev mode
+CMD pnpm run start:dev:worker
