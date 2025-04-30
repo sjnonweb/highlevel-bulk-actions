@@ -7,6 +7,7 @@ import { BulkAction } from './bulk-action/entities/bulk-action.entity';
 import { BulkActionBatch } from './bulk-action/entities/bulk-action-batch.entity';
 import { BulkActionItem } from './bulk-action/entities/bulk-action-items.entity';
 import { Contact } from './contacts/entities/contact.entity';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -30,6 +31,16 @@ import { Contact } from './contacts/entities/contact.entity';
           BulkActionItem,
           Contact,
         ],
+      }),
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+        },
       }),
     }),
     BulkActionModule,
