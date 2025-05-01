@@ -12,10 +12,15 @@ export class BulkActionWorker extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
-    this.logger.log(`processing job ${job.name} with id ${job.id}`);
-    const bulkAction = await this.bulkActionService.findOne(job.data.bulkActionId);
-    const result = await this.bulkActionService.process(bulkAction)
-    this.logger.log(`completed job ${job.name} with id ${job.id}`);
-    return result;
+    this.logger.log(`Processing job ${job.name} with id ${job.id}`);
+    try {
+      const bulkAction = await this.bulkActionService.findOne(job.data.bulkActionId);
+      await this.bulkActionService.process(bulkAction)
+    } catch (error) {
+      this.logger.error('An error occured while processing the job');
+      this.logger.error(error);
+    }
+    this.logger.log(`Completed job ${job.name} with id ${job.id}`);
+    return true;
   }
 }
