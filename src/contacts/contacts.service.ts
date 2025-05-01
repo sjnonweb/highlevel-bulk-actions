@@ -20,11 +20,11 @@ export class ContactsService {
 
   async create(contactData: Partial<Contact>): Promise<Contact> {
     const contact = this.contactsRepository.create(contactData);
-    return this.contactsRepository.save(contact);
+    return await this.contactsRepository.save(contact);
   }
 
-  async bulkCreate(contactsData: Partial<Contact>[]): Promise<Contact[]> {
+  async createBulk(contactsData: Partial<Contact>[]): Promise<Contact[]> {
     const contacts = this.contactsRepository.create(contactsData);
-    return this.contactsRepository.save(contacts);
+    return await this.contactsRepository.save(contacts);
   }
 }

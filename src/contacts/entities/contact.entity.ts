@@ -11,7 +11,7 @@ export class Contact extends BaseEntity {
   @Index()
   accountId: string;
 
-  @Column()
+  @Column({ unique: true })
   @Index()
   email: string;
 
