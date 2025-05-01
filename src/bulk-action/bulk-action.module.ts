@@ -5,17 +5,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BulkAction } from './entities/bulk-action.entity';
 import { BullModule } from '@nestjs/bullmq';
 import { ContactBulkActionProcessor } from './processors/contact.processor';
-import { ContactsService } from 'src/contacts/contacts.service';
-import { Contact } from 'src/contacts/entities/contact.entity';
+import { ContactsModule } from 'src/contacts/contacts.module';
 
 export const BULK_PROCESSORS = 'BULK_PROCESSORS';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BulkAction, Contact]),
+    TypeOrmModule.forFeature([BulkAction]),
     BullModule.registerQueue(
       { name: 'bulk-action' },
     ),
+    ContactsModule,
   ],
   providers: [
     {
@@ -26,7 +26,6 @@ export const BULK_PROCESSORS = 'BULK_PROCESSORS';
       ) => [contact],
     },
     BulkActionService,
-    ContactsService,
     ContactBulkActionProcessor,
   ],
   controllers: [BulkActionController],
