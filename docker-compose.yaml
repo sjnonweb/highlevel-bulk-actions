@@ -28,6 +28,7 @@ services:
       - upload_data:/data/uploads
     environment:
       - NODE_ENV=development
+      - DB_SYNC=false
     restart: unless-stopped
     depends_on:
       - postgres

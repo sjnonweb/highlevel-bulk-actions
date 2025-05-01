@@ -44,7 +44,7 @@ function createImports() {
         port: configService.get('DB_PORT'),
         username: configService.get('DB_USER'),
         password: configService.get('DB_PASSWORD'),
-        synchronize: configService.get('DB_SYNC'),
+        synchronize: configService.get('DB_SYNC') === 'true',
         entities: [
           BulkAction,
           BulkActionBatch,
