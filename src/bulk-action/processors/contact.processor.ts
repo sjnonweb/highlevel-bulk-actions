@@ -40,9 +40,9 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
       } catch (error) {
         this.logger.error('An error occurred while processing the job');
         this.logger.error(error);
+        bulkActionItem.message = error.detail || 'Internal Server Error';
         if (error instanceof QueryFailedError) {
           const err: any = error;
-          bulkActionItem.message = err.detail;
           if (err.code === '23505') {
             // duplicate constraint failure
             bulkActionItem.status = BulkActionItemStatus.SKIPPED;
