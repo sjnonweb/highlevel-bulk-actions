@@ -10,6 +10,7 @@ import { plainToInstance } from 'class-transformer';
 import { Queue, JobType } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { IBulkActionProcessor } from './processors/abstract.processor';
+import { BulkActionItem } from './entities/bulk-action-items.entity';
 
 @Injectable()
 export class BulkActionService {
@@ -18,6 +19,8 @@ export class BulkActionService {
     private processors: IBulkActionProcessor[],
     @InjectRepository(BulkAction)
     private bulkActionRepository: Repository<BulkAction>,
+    @InjectRepository(BulkActionItem)
+    private bulkActionItemRepository: Repository<BulkActionItem>,
     @InjectQueue('bulk-action')
     private bulkActionQueue: Queue,
   ) {}
@@ -69,5 +72,10 @@ export class BulkActionService {
         .on('data', (row) => results.push(row))
         .on('end', () => resolve(results));
     });
+  }
+
+  async createBulkActionItem(payload: Partial<BulkActionItem>): Promise<BulkActionItem> {
+    const bulkActionItem = this.bulkActionItemRepository.create(payload);
+    return await this.bulkActionItemRepository.save(bulkActionItem);
   }
 }

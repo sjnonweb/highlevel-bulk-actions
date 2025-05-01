@@ -6,12 +6,13 @@ import { BulkAction } from './entities/bulk-action.entity';
 import { BullModule } from '@nestjs/bullmq';
 import { ContactBulkActionProcessor } from './processors/contact.processor';
 import { ContactsModule } from 'src/contacts/contacts.module';
+import { BulkActionItem } from './entities/bulk-action-items.entity';
 
 export const BULK_PROCESSORS = 'BULK_PROCESSORS';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BulkAction]),
+    TypeOrmModule.forFeature([BulkAction, BulkActionItem]),
     BullModule.registerQueue(
       { name: 'bulk-action' },
     ),
