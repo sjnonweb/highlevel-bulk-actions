@@ -8,7 +8,7 @@ import { BulkActionBatch } from './bulk-action/entities/bulk-action-batch.entity
 import { BulkActionItem } from './bulk-action/entities/bulk-action-items.entity';
 import { Contact } from './contacts/entities/contact.entity';
 import { BullModule } from '@nestjs/bullmq';
-import { BulkActionProcessor } from 'src/processors/bulk-action.processor';
+import { BulkActionWorker } from 'src/workers/bulk-action.worker';
 
 @Module({
   imports: [
@@ -48,6 +48,6 @@ import { BulkActionProcessor } from 'src/processors/bulk-action.processor';
     ContactsModule,
   ],
   controllers: [],
-  providers: [BulkActionProcessor],
+  providers: [BulkActionWorker],
 })
 export class WorkerModule {}
