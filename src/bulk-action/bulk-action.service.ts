@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BulkAction } from './entities/bulk-action.entity';
@@ -9,15 +9,30 @@ import { BulkActionResponseDto } from './dto/bulk-action-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { Queue, JobType } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
+import { IBulkActionProcessor } from './processors/abstract.processor';
 
 @Injectable()
 export class BulkActionService {
   constructor(
+    @Inject('BULK_PROCESSORS')
+    private processors: IBulkActionProcessor[],
     @InjectRepository(BulkAction)
     private bulkActionRepository: Repository<BulkAction>,
     @InjectQueue('bulk-action')
     private bulkActionQueue: Queue,
   ) {}
+
+  async process(bulkAction: BulkAction): Promise<boolean> {
+    const processor = this.processors.find((p) => p.supports(bulkAction.entityType))
+    if (!processor) {
+      throw new Error(`Proessor not found for entityType: ${bulkAction.entityType}`)
+    }
+    return await processor.process(bulkAction);
+  }
+
+  async findOne(id: number): Promise<BulkAction> {
+    return this.bulkActionRepository.findOneByOrFail({ id });
+  }
 
   async findAll(): Promise<BulkAction[]> {
     return this.bulkActionRepository.find();
