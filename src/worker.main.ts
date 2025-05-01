@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import { WorkerModule } from './worker.module';
 import { ConsoleLogger, Logger } from '@nestjs/common';
+import { createRootModule } from './root.module';
+import { AppMode } from './common/enums/app-mode.enum';
 
 async function bootstrap() {
-  const app = await NestFactory.create(WorkerModule, {
+  const RootModule = createRootModule(AppMode.WORKER)
+  const app = await NestFactory.create(RootModule, {
     logger: new ConsoleLogger({
       json: true,
       colors: true,
