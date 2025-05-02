@@ -18,6 +18,23 @@ $ cp .env.template .env
 $ docker-compose up -d --build
 ```
 
+## Using the service
+Generate a sample csv using the below utility script, the second argument is for defining the size of csv file.
+```bash
+$ node gen-csv.mjs 100
+```
+
+Now, submit the csv file as form-data in `POST /api/v1/bulk-actions/` endpoint. Here is a sample curl
+
+```
+curl --request POST \
+  --url http://localhost:3000/api/v1/bulk-actions \
+  --header 'Content-Type: multipart/form-data' \
+  --header 'User-Agent: insomnia/11.0.2' \
+  --form file=@/Users/sajan/test.csv \
+  --form accountId=test \
+  --form entityType=CONTACT
+```
 
 ## Features
 
