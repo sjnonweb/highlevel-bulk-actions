@@ -38,7 +38,11 @@ export class BulkActionService {
   }
 
   async findAll(): Promise<BulkAction[]> {
-    return this.bulkActionRepository.find();
+    return this.bulkActionRepository.find({
+      order: {
+        createdAt: 'DESC',
+      }
+    });
   }
 
   async create(
