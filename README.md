@@ -50,7 +50,7 @@ curl --request POST \
 
 **2. Horizontal Scaling:** The worker container defined in `Dockerfile.worker` file can be scaled via docker-compose like so: `docker-compose up -d --scale worker=3`
 
-**3. Stats:** Stats are captured in real time during bulk-action processing. It can be accessed from `bulk-action/:id/stats` endpoint. Api server level json logs are also enabled.
+**3. Stats:** Stats are captured in real time during bulk-action processing. It can be accessed from `bulk-action/:id/stats` endpoint.
 
 
 **3. Logs:** Logs are captured at row level for the entire csv file. It can be accessed from `bulk-action/:id/logs` endpoint. Api server level json logs are also enabled.
