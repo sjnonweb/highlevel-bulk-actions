@@ -11,6 +11,8 @@ import { Queue, JobType } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { IBulkActionProcessor } from './processors/abstract.processor';
 import { BulkActionItem } from './entities/bulk-action-items.entity';
+import { BulkActionStatus } from 'src/common/enums/bulk-action-status.enum';
+import { BulkActionFilterDto } from './dto/bulk-action-filter.dto';
 
 @Injectable()
 export class BulkActionService {
@@ -38,8 +40,9 @@ export class BulkActionService {
     return this.bulkActionRepository.findOneBy({ id });
   }
 
-  async findAll(): Promise<BulkAction[]> {
+  async findAll(query: BulkActionFilterDto): Promise<BulkAction[]> {
     return this.bulkActionRepository.find({
+      where: query,
       order: {
         createdAt: 'DESC',
       }

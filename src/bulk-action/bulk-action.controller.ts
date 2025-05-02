@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  Query,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,6 +19,8 @@ import { BulkActionCreateDto } from './dto/bulk-action-create.dto';
 import { BulkActionResponseDto } from './dto/bulk-action-response.dto';
 import { BulkActionStatsResponseDto } from './dto/bulk-action-stats-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { BulkActionStatus } from 'src/common/enums/bulk-action-status.enum';
+import { BulkActionFilterDto } from './dto/bulk-action-filter.dto';
 
 const UPLOAD_DIRECTORY = process.env.UPLOAD_DIRECTORY || '/data/uploads';
 
@@ -28,8 +31,11 @@ export class BulkActionController {
   ) {}
 
   @Get()
-  async findAll(): Promise<BulkAction[]> {
-    return this.bulkActionService.findAll();
+  async findAll(
+    @Query() query: BulkActionFilterDto,
+  ): Promise<BulkAction[]> {
+    console.log(query);
+    return this.bulkActionService.findAll(query);
   }
 
   @Get(':id')
