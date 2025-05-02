@@ -28,49 +28,69 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
   async process(bulkAction: BulkAction): Promise<boolean> {
     const parsed = await this.bulkActionService.parseCsvFile(bulkAction.file);
-
+    let counters: any = {};
     try {
       // trying bulk insert first
       this.logger.log('Processing in bulk mode');
-      await this.processBulk(bulkAction, parsed);
+      counters = await this.processBulk(bulkAction, parsed);
     } catch (error) {
       this.logger.error('An error occurred while processing the job');
       this.logger.error(error);
 
       // failure in bulk save, fallback to sequential processing
       this.logger.log('Falling back to sequential mode');
-      await this.processSqeuential(bulkAction, parsed);
+      counters = await this.processSqeuential(bulkAction, parsed);
     }
+
+    // TODO: use atomic updates for counters
+    // await this.bulkActionService.incrementBulkActionStats(bulkAction, counters);
+    // tried atomic update for these fields to prevent race condition
+    // but there is a error with the query, not enough time to figure it
+    // out right now
+    bulkAction.processedItems += (counters.successfulItems + counters.failedItems + counters.skippedItems);
+    bulkAction.successfulItems += counters.successfulItems;
+    bulkAction.failedItems += counters.failedItems;
+    bulkAction.skippedItems += counters.skippedItems;
+    await bulkAction.save();
 
     return true;
   }
 
-  async processSqeuential(bulkAction: BulkAction, parsed: Record<string, string>[]): Promise<boolean> {
+  async processSqeuential(
+    bulkAction: BulkAction,
+    parsed: Record<string, string>[],
+  ): Promise<Record<string, number>> {
+    const counters = {
+      successfulItems: 0,
+      failedItems: 0,
+      skippedItems: 0,
+    };
     for (const row of parsed) {
       let bulkActionItem = await this.bulkActionItemRepository.findOneBy({
         bulkAction: {
           id: bulkAction.id,
         },
-        entityId: row["email"],
+        entityId: row['email'],
       });
       if (!bulkActionItem) {
         bulkActionItem = this.bulkActionItemRepository.create({
           bulkAction,
-          entityId: row["email"],
+          entityId: row['email'],
           status: BulkActionItemStatus.QUEUED,
         });
       }
       try {
         const contact = this.contactsService.create({
           accountId: bulkAction.accountId,
-          email: row["email"],
-          name: row["name"],
-          age: parseInt(row["age"]),
+          email: row['email'],
+          name: row['name'],
+          age: parseInt(row['age']),
         });
         await contact.save();
 
         bulkActionItem.status = BulkActionItemStatus.SUCCESS;
-        await bulkActionItem.save()
+        await bulkActionItem.save();
+        counters.successfulItems += 1;
       } catch (error) {
         bulkActionItem.message = error.detail || 'Internal Server Error';
         if (error instanceof QueryFailedError) {
@@ -78,21 +98,27 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
           if (err.code === '23505') {
             // duplicate constraint failure
             bulkActionItem.status = BulkActionItemStatus.SKIPPED;
+            counters.skippedItems += 1;
           } else {
             // failed for any other reason
             bulkActionItem.status = BulkActionItemStatus.FAILED;
+            counters.failedItems += 1;
           }
         } else {
           bulkActionItem.status = BulkActionItemStatus.FAILED;
+          counters.failedItems += 1;
         }
       } finally {
         await bulkActionItem.save();
       }
     }
-    return true;
+    return counters;
   }
 
-  async processBulk(bulkAction: BulkAction, parsed: Record<string, string>[]): Promise<boolean> {
+  async processBulk(
+    bulkAction: BulkAction,
+    parsed: Record<string, string>[],
+  ): Promise<Record<string, number>> {
     const bulkActionItems: BulkActionItem[] = [];
     parsed.forEach((row) => {
       bulkActionItems.push(
@@ -100,7 +126,7 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
           status: BulkActionItemStatus.QUEUED,
           entityId: row['email'],
           bulkAction,
-        })
+        }),
       );
     });
     await this.bulkActionItemRepository.save(bulkActionItems);
@@ -110,10 +136,10 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
       contacts.push(
         this.contactsService.create({
           accountId: bulkAction.accountId,
-          email: row["email"],
-          name: row["name"],
-          age: parseInt(row["age"]),
-        })
+          email: row['email'],
+          name: row['name'],
+          age: parseInt(row['age']),
+        }),
       );
     });
     await this.contactsService.saveBulk(contacts);
@@ -124,6 +150,10 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
     await this.bulkActionItemRepository.save(bulkActionItems);
 
-    return true;
+    return {
+      successfulItems: parsed.length,
+      failedItems: 0,
+      skippedItems: 0,
+    };
   }
 }
