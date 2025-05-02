@@ -16,6 +16,8 @@ import { BulkAction } from './entities/bulk-action.entity';
 import { BulkActionService } from './bulk-action.service';
 import { BulkActionCreateDto } from './dto/bulk-action-create.dto';
 import { BulkActionResponseDto } from './dto/bulk-action-response.dto';
+import { BulkActionStatsResponseDto } from './dto/bulk-action-stats-response.dto';
+import { plainToInstance } from 'class-transformer';
 
 const UPLOAD_DIRECTORY = process.env.UPLOAD_DIRECTORY || '/data/uploads';
 
@@ -37,6 +39,15 @@ export class BulkActionController {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND)
     }
     return bulkAction;
+  }
+
+  @Get(':id/stats')
+  async findStats(@Param('id') id: number): Promise<BulkActionStatsResponseDto> {
+    const bulkAction =  await this.bulkActionService.findOne(id);
+    if (!bulkAction) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND)
+    }
+    return plainToInstance(BulkActionStatsResponseDto, bulkAction);
   }
 
   @Get('jobs')
