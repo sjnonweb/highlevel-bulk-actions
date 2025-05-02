@@ -4,6 +4,14 @@
 
 Bulk actions service for ingesting huge csv files into your database.
 
+Tech stack:
+
+1. Web framework: NestJs
+2. Database: Postgres
+3. Queue: Redis
+4. Background task processing: BullMq
+5. Runtime: docker
+
 ## Project setup
 
 ```bash
@@ -38,11 +46,7 @@ curl --request POST \
 
 ## Features
 
-**1. Entities and Actions:** The service currently supports Bulk actions on the Contact Entity located in `src/contacts/entities`. Adding support for more entities will require:
-
-  1. Create the Entity module with schema and service methods.
-  2. Implement `EntityProcessor` class by extending abstract class `BulkActionProcessor` from `src/bulk-actions/processor/abstract.processor.ts`. Which implements `IBulkActionProcessor` interface
-  3. Register this `EntityProcessor` in BulkAction module
+**1. Entities and Actions:** The service currently supports Bulk actions on the Contact Entity located in `src/contacts/entities`.
 
 **2. Horizontal Scaling:** The worker container defined in `Dockerfile.worker` file can be scaled via docker-compose like so: `docker-compose up -d --scale worker=3`
 
@@ -59,7 +63,13 @@ curl --request POST \
 
 **7. Scheduling:** Bulk actions can be scheduled for a specific time in future, service expects iso string as the date format. Can be generated from `new Date().toISOString()`
 
-**8. Rate Limiting:** This has not been implemented as i ran out of time. There are two ways i could have implemented it:
+**8. Extensibility:** Code is writte in a modular architecture, using nestjs dependency injection system. Adding support for a new entity can be done in following way:
+
+  1. Create the Entity module with schema and service methods.
+  2. Implement `EntityProcessor` class by extending abstract class `BulkActionProcessor` from `src/bulk-actions/processor/abstract.processor.ts`. Which implements `IBulkActionProcessor` interface
+  3. Register this `EntityProcessor` in BulkAction module
+
+**9. Rate Limiting:** This has not been implemented as i ran out of time. There are two ways i could have implemented it:
 
   1. Rejection: Check the number of items processed in the last one minute and if the new request exceeds the limit we can reject the request.
   2. Delayed processing: I would have preferred to implement this where we can delay the execution to future in case user has exceeded the limit at this moment.
