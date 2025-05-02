@@ -64,9 +64,17 @@ export class BulkActionService {
       totalItems,
     });
     await this.bulkActionRepository.save(bulkAction);
-    await this.bulkActionQueue.add('bulk-action', {
-      bulkActionId: bulkAction.id,
-    });
+    const jobOptions: any = {};
+    if (bulkActionData.scheduledFor) {
+      jobOptions.delay = bulkActionData.scheduledFor.getTime() - Date.now();
+    }
+    await this.bulkActionQueue.add(
+      'bulk-action',
+      {
+        bulkActionId: bulkAction.id,
+      },
+      jobOptions,
+    );
     return plainToInstance(BulkActionResponseDto, bulkAction);
   }
 
