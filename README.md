@@ -65,7 +65,7 @@ For a complete list of APIs please visit `/docs` after starting the server.
 
 **7. Scheduling:** Bulk actions can be scheduled for a specific time in future, service expects iso string as the date format. Can be generated from `new Date().toISOString()`
 
-**8. Extensibility:** Code is writte in a modular architecture, using nestjs dependency injection system. Adding support for a new entity can be done in following way:
+**8. Extensibility:** Code is written in a modular architecture, using nestjs dependency injection system. Adding support for a new entity can be done in following way:
 
   1. Create the Entity module with schema and service methods.
   2. Implement `EntityProcessor` class by extending abstract class `BulkActionProcessor` from `src/bulk-actions/processor/abstract.processor.ts`. Which implements `IBulkActionProcessor` interface
