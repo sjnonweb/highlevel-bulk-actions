@@ -18,13 +18,15 @@ export class ContactsService {
     return this.contactsRepository.findOneBy({ id });
   }
 
-  async create(contactData: Partial<Contact>): Promise<Contact> {
-    const contact = this.contactsRepository.create(contactData);
+  create(contactData: Partial<Contact>): Contact {
+    return this.contactsRepository.create(contactData);
+  }
+
+  async save(contact: Contact): Promise<Contact> {
     return await this.contactsRepository.save(contact);
   }
 
-  async createBulk(contactsData: Partial<Contact>[]): Promise<Contact[]> {
-    const contacts = this.contactsRepository.create(contactsData);
+  async saveBulk(contacts: Contact[]): Promise<Contact[]> {
     return await this.contactsRepository.save(contacts);
   }
 }
