@@ -14,7 +14,11 @@ export class BulkActionWorker extends WorkerHost {
   async process(job: Job<any, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.name} with id ${job.id}`);
     try {
-      const bulkAction = await this.bulkActionService.findOne(job.data.bulkActionId);
+      const bulkActionId = job.data.bulkActionId;
+      const bulkAction = await this.bulkActionService.findOne(bulkActionId);
+      if (!bulkAction) {
+        throw new Error(`Bulk action with id ${bulkActionId} does not exist`);
+      }
       await this.bulkActionService.process(bulkAction)
     } catch (error) {
       this.logger.error('An error occured while processing the job');

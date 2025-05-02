@@ -6,7 +6,10 @@ import { ContactsService } from 'src/contacts/contacts.service';
 import { BulkActionService } from '../bulk-action.service';
 import { Logger } from '@nestjs/common';
 import { BulkActionItemStatus } from 'src/common/enums/bulk-action-item-status.enum';
-import { QueryFailedError } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { BulkActionItem } from '../entities/bulk-action-items.entity';
+import { Contact } from 'src/contacts/entities/contact.entity';
 
 @Injectable()
 export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEntityType.CONTACT> {
@@ -16,6 +19,8 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
   constructor(
     @Inject(forwardRef(() => BulkActionService))
     private bulkActionService: BulkActionService,
+    @InjectRepository(BulkActionItem)
+    private bulkActionItemRepository: Repository<BulkActionItem>,
     private contactsService: ContactsService,
   ) {
     super();
@@ -23,23 +28,50 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
   async process(bulkAction: BulkAction): Promise<boolean> {
     const parsed = await this.bulkActionService.parseCsvFile(bulkAction.file);
+
+    try {
+      // trying bulk insert first
+      this.logger.log('Processing in bulk mode');
+      await this.processBulk(bulkAction, parsed);
+    } catch (error) {
+      this.logger.error('An error occurred while processing the job');
+      this.logger.error(error);
+
+      // failure in bulk save, fallback to sequential processing
+      this.logger.log('Falling back to sequential mode');
+      await this.processSqeuential(bulkAction, parsed);
+    }
+
+    return true;
+  }
+
+  async processSqeuential(bulkAction: BulkAction, parsed: Record<string, string>[]): Promise<boolean> {
     for (const row of parsed) {
-      const bulkActionItem = await this.bulkActionService.createBulkActionItem({
-        status: BulkActionItemStatus.QUEUED,
+      let bulkActionItem = await this.bulkActionItemRepository.findOneBy({
+        bulkAction: {
+          id: bulkAction.id,
+        },
         entityId: row["email"],
-        bulkAction,
       });
+      if (!bulkActionItem) {
+        bulkActionItem = this.bulkActionItemRepository.create({
+          bulkAction,
+          entityId: row["email"],
+          status: BulkActionItemStatus.QUEUED,
+        });
+      }
       try {
-        await this.contactsService.create({
+        const contact = this.contactsService.create({
           accountId: bulkAction.accountId,
           email: row["email"],
           name: row["name"],
           age: parseInt(row["age"]),
         });
+        await contact.save();
+
         bulkActionItem.status = BulkActionItemStatus.SUCCESS;
+        await bulkActionItem.save()
       } catch (error) {
-        this.logger.error('An error occurred while processing the job');
-        this.logger.error(error);
         bulkActionItem.message = error.detail || 'Internal Server Error';
         if (error instanceof QueryFailedError) {
           const err: any = error;
@@ -57,6 +89,41 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
         await bulkActionItem.save();
       }
     }
+    return true;
+  }
+
+  async processBulk(bulkAction: BulkAction, parsed: Record<string, string>[]): Promise<boolean> {
+    const bulkActionItems: BulkActionItem[] = [];
+    parsed.forEach((row) => {
+      bulkActionItems.push(
+        this.bulkActionItemRepository.create({
+          status: BulkActionItemStatus.QUEUED,
+          entityId: row['email'],
+          bulkAction,
+        })
+      );
+    });
+    await this.bulkActionItemRepository.save(bulkActionItems);
+
+    const contacts: Contact[] = [];
+    parsed.forEach((row) => {
+      contacts.push(
+        this.contactsService.create({
+          accountId: bulkAction.accountId,
+          email: row["email"],
+          name: row["name"],
+          age: parseInt(row["age"]),
+        })
+      );
+    });
+    await this.contactsService.saveBulk(contacts);
+
+    bulkActionItems.forEach((item) => {
+      item.status = BulkActionItemStatus.SUCCESS;
+    });
+
+    await this.bulkActionItemRepository.save(bulkActionItems);
+
     return true;
   }
 }
