@@ -19,8 +19,8 @@ import { BulkActionCreateDto } from './dto/bulk-action-create.dto';
 import { BulkActionResponseDto } from './dto/bulk-action-response.dto';
 import { BulkActionStatsResponseDto } from './dto/bulk-action-stats-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { BulkActionStatus } from 'src/common/enums/bulk-action-status.enum';
 import { BulkActionFilterDto } from './dto/bulk-action-filter.dto';
+import { ApiOperation } from '@nestjs/swagger';
 
 const UPLOAD_DIRECTORY = process.env.UPLOAD_DIRECTORY || '/data/uploads';
 
@@ -31,6 +31,9 @@ export class BulkActionController {
   ) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Get all bulk actions. Filter is supported',
+  })
   async findAll(
     @Query() query: BulkActionFilterDto,
   ): Promise<BulkAction[]> {
@@ -39,6 +42,9 @@ export class BulkActionController {
   }
 
   @Get(':id')
+  @ApiOperation({
+    summary: 'Get bulk action details',
+  })
   async findOne(@Param('id') id: number): Promise<BulkAction> {
     const bulkAction =  await this.bulkActionService.findOne(id);
     if (!bulkAction) {
@@ -48,6 +54,9 @@ export class BulkActionController {
   }
 
   @Get(':id/stats')
+  @ApiOperation({
+    summary: 'Get bulk action stats',
+  })
   async findStats(@Param('id') id: number): Promise<BulkActionStatsResponseDto> {
     const bulkAction =  await this.bulkActionService.findOne(id);
     if (!bulkAction) {
@@ -57,6 +66,9 @@ export class BulkActionController {
   }
 
   @Get(':id/logs')
+  @ApiOperation({
+    summary: 'Get bulk action logs',
+  })
   async findLogs(@Param('id') id: number): Promise<BulkAction> {
     const bulkAction =  await this.bulkActionService.findBulkActionItems(id);
     if (!bulkAction) {
@@ -66,6 +78,9 @@ export class BulkActionController {
   }
 
   @Post()
+  @ApiOperation({
+    summary: 'Create bulk action',
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
