@@ -50,6 +50,15 @@ export class BulkActionController {
     return plainToInstance(BulkActionStatsResponseDto, bulkAction);
   }
 
+  @Get(':id/logs')
+  async findLogs(@Param('id') id: number): Promise<BulkAction> {
+    const bulkAction =  await this.bulkActionService.findBulkActionItems(id);
+    if (!bulkAction) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND)
+    }
+    return bulkAction;
+  }
+
   @Get('jobs')
   async getJobs(): Promise<any> {
     return await this.bulkActionService.getAllJobs();

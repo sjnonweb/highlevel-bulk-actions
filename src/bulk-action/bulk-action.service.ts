@@ -46,6 +46,13 @@ export class BulkActionService {
     });
   }
 
+  async findBulkActionItems(id: number): Promise<BulkAction | null> {
+    return this.bulkActionRepository.findOne({
+      where: { id },
+      relations: ['items']
+    });
+  }
+
   async create(
     bulkActionData: BulkActionCreateDto,
     file: string,
