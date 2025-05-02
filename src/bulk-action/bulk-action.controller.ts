@@ -37,7 +37,6 @@ export class BulkActionController {
   async findAll(
     @Query() query: BulkActionFilterDto,
   ): Promise<BulkAction[]> {
-    console.log(query);
     return this.bulkActionService.findAll(query);
   }
 
