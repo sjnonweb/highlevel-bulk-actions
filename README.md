@@ -44,6 +44,8 @@ curl --request POST \
   --form entityType=CONTACT
 ```
 
+For a complete list of APIs please visit `/docs` after starting the server.
+
 ## Features
 
 **1. Entities and Actions:** The service currently supports Bulk actions on the Contact Entity located in `src/contacts/entities`.
