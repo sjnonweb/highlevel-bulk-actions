@@ -34,8 +34,8 @@ export class BulkActionService {
     return await processor.process(bulkAction);
   }
 
-  async findOne(id: number): Promise<BulkAction> {
-    return this.bulkActionRepository.findOneByOrFail({ id });
+  async findOne(id: number): Promise<BulkAction | null> {
+    return this.bulkActionRepository.findOneBy({ id });
   }
 
   async findAll(): Promise<BulkAction[]> {

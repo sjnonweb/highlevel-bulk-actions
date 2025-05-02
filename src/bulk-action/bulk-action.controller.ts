@@ -5,6 +5,7 @@ import {
   ParseFilePipe,
   HttpException,
   HttpStatus,
+  Param,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -27,6 +28,15 @@ export class BulkActionController {
   @Get()
   async findAll(): Promise<BulkAction[]> {
     return this.bulkActionService.findAll();
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: number): Promise<BulkAction> {
+    const bulkAction =  await this.bulkActionService.findOne(id);
+    if (!bulkAction) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND)
+    }
+    return bulkAction;
   }
 
   @Get('jobs')

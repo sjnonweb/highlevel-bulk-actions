@@ -15,7 +15,7 @@ export class BulkActionWorker extends WorkerHost {
 
   async process(job: Job<any, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.name} with id ${job.id}`);
-    let bulkAction: BulkAction | undefined;
+    let bulkAction: BulkAction | null = null;
     try {
       const bulkActionId = job.data.bulkActionId;
       bulkAction = await this.bulkActionService.findOne(bulkActionId);
