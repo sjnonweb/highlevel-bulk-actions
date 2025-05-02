@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { BulkAction } from './entities/bulk-action.entity';
 import * as fs from 'fs';
 import { parse } from 'fast-csv';
@@ -17,6 +17,7 @@ export class BulkActionService {
   constructor(
     @Inject('BULK_PROCESSORS')
     private processors: IBulkActionProcessor[],
+    private dataSource: DataSource,
     @InjectRepository(BulkAction)
     private bulkActionRepository: Repository<BulkAction>,
     @InjectRepository(BulkActionItem)
@@ -81,5 +82,32 @@ export class BulkActionService {
   async createBulkActionItem(payload: Partial<BulkActionItem>): Promise<BulkActionItem> {
     const bulkActionItem = this.bulkActionItemRepository.create(payload);
     return await this.bulkActionItemRepository.save(bulkActionItem);
+  }
+
+  async incrementBulkActionStats(
+    bulkAction: BulkAction,
+    counters: {
+      successfulItems: number,
+      failedItems: number,
+      skippedItems: number,
+    },
+  ): Promise<any> {
+    const processedItems = counters.successfulItems + counters.failedItems + counters.skippedItems;
+    const query = this.dataSource.createQueryBuilder()
+      .update(BulkAction)
+      .set({
+        processedItems: () => "processedItems + :processedItems",
+        successfulItems: () => "successfulItems + :successfulItems",
+        failedItems: () => "failedItems + :failedItems",
+        skippedItems: () => "skippedItems + :skippedItems",
+      })
+      .where("id = :id", { id: bulkAction.id })
+      .setParameters({
+        processedItems,
+        successfulItems: counters.successfulItems,
+        failedItems: counters.failedItems,
+        skippedItems: counters.skippedItems,
+      });
+    return await query.execute();
   }
 }
