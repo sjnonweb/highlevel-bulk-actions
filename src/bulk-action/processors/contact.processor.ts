@@ -10,6 +10,7 @@ import { QueryFailedError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BulkActionItem } from '../entities/bulk-action-items.entity';
 import { Contact } from 'src/contacts/entities/contact.entity';
+import { ProcessorCounter } from './processor-counter.type';
 
 @Injectable()
 export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEntityType.CONTACT> {
@@ -28,29 +29,29 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
   async process(bulkAction: BulkAction): Promise<boolean> {
     const parsed = await this.bulkActionService.parseCsvFile(bulkAction.file);
-    let counters: any = {};
+    let counter: ProcessorCounter;
     try {
       // trying bulk insert first
       this.logger.log('Processing in bulk mode');
-      counters = await this.processBulk(bulkAction, parsed);
+      counter = await this.processBulk(bulkAction, parsed);
     } catch (error) {
       this.logger.error('An error occurred while processing the job');
       this.logger.error(error);
 
       // failure in bulk save, fallback to sequential processing
       this.logger.log('Falling back to sequential mode');
-      counters = await this.processSqeuential(bulkAction, parsed);
+      counter = await this.processSqeuential(bulkAction, parsed);
     }
 
-    // TODO: use atomic updates for counters
-    // await this.bulkActionService.incrementBulkActionStats(bulkAction, counters);
+    // TODO: use atomic updates for counter
+    // await this.bulkActionService.incrementBulkActionStats(bulkAction, counter);
     // tried atomic update for these fields to prevent race condition
     // but there is a error with the query, not enough time to figure it
     // out right now
-    bulkAction.processedItems += (counters.successfulItems + counters.failedItems + counters.skippedItems);
-    bulkAction.successfulItems += counters.successfulItems;
-    bulkAction.failedItems += counters.failedItems;
-    bulkAction.skippedItems += counters.skippedItems;
+    bulkAction.processedItems += (counter.successfulItems + counter.failedItems + counter.skippedItems);
+    bulkAction.successfulItems += counter.successfulItems;
+    bulkAction.failedItems += counter.failedItems;
+    bulkAction.skippedItems += counter.skippedItems;
     await bulkAction.save();
 
     return true;
@@ -59,8 +60,8 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
   async processSqeuential(
     bulkAction: BulkAction,
     parsed: Record<string, string>[],
-  ): Promise<Record<string, number>> {
-    const counters = {
+  ): Promise<ProcessorCounter> {
+    const counter = {
       successfulItems: 0,
       failedItems: 0,
       skippedItems: 0,
@@ -90,7 +91,7 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
         bulkActionItem.status = BulkActionItemStatus.SUCCESS;
         await bulkActionItem.save();
-        counters.successfulItems += 1;
+        counter.successfulItems += 1;
       } catch (error) {
         bulkActionItem.message = error.detail || 'Internal Server Error';
         if (error instanceof QueryFailedError) {
@@ -98,27 +99,27 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
           if (err.code === '23505') {
             // duplicate constraint failure
             bulkActionItem.status = BulkActionItemStatus.SKIPPED;
-            counters.skippedItems += 1;
+            counter.skippedItems += 1;
           } else {
             // failed for any other reason
             bulkActionItem.status = BulkActionItemStatus.FAILED;
-            counters.failedItems += 1;
+            counter.failedItems += 1;
           }
         } else {
           bulkActionItem.status = BulkActionItemStatus.FAILED;
-          counters.failedItems += 1;
+          counter.failedItems += 1;
         }
       } finally {
         await bulkActionItem.save();
       }
     }
-    return counters;
+    return counter;
   }
 
   async processBulk(
     bulkAction: BulkAction,
     parsed: Record<string, string>[],
-  ): Promise<Record<string, number>> {
+  ): Promise<ProcessorCounter> {
     const bulkActionItems: BulkActionItem[] = [];
     parsed.forEach((row) => {
       bulkActionItems.push(

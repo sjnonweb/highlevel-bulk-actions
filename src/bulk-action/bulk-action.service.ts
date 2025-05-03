@@ -11,8 +11,8 @@ import { Queue, JobType } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { IBulkActionProcessor } from './processors/abstract.processor';
 import { BulkActionItem } from './entities/bulk-action-items.entity';
-import { BulkActionStatus } from 'src/common/enums/bulk-action-status.enum';
 import { BulkActionFilterDto } from './dto/bulk-action-filter.dto';
+import { ProcessorCounter } from './processors/processor-counter.type';
 
 @Injectable()
 export class BulkActionService {
@@ -104,13 +104,9 @@ export class BulkActionService {
 
   async incrementBulkActionStats(
     bulkAction: BulkAction,
-    counters: {
-      successfulItems: number,
-      failedItems: number,
-      skippedItems: number,
-    },
-  ): Promise<any> {
-    const processedItems = counters.successfulItems + counters.failedItems + counters.skippedItems;
+    counter: ProcessorCounter,
+  ): Promise<void> {
+    const processedItems = counter.successfulItems + counter.failedItems + counter.skippedItems;
     const query = this.dataSource.createQueryBuilder()
       .update(BulkAction)
       .set({
@@ -122,10 +118,10 @@ export class BulkActionService {
       .where("id = :id", { id: bulkAction.id })
       .setParameters({
         processedItems,
-        successfulItems: counters.successfulItems,
-        failedItems: counters.failedItems,
-        skippedItems: counters.skippedItems,
+        successfulItems: counter.successfulItems,
+        failedItems: counter.failedItems,
+        skippedItems: counter.skippedItems,
       });
-    return await query.execute();
+    await query.execute();
   }
 }
