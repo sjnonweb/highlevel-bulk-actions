@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 # set current directory
-WORKDIR /app
+WORKDIR /src
 
 # install dependencies
 COPY package.json ./
@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 3000
 
 # start in dev mode
-CMD pnpm run start:dev
+CMD ["pnpm", "run", "start:dev"]

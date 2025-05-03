@@ -1,14 +1,14 @@
 services:
-  app:
-    container_name: app
+  api:
+    container_name: api
     build:
       context: .
-      dockerfile: Dockerfile.app
-    image: app
+      dockerfile: Dockerfile.api
+    image: api
     ports:
       - "3000:3000"
     volumes:
-      - .:/app
+      - .:/src
       - upload_data:/data/uploads
     environment:
       - NODE_ENV=development
@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile.worker
     image: worker
     volumes:
-      - .:/app
+      - .:/src
       - upload_data:/data/uploads
     environment:
       - NODE_ENV=development
