@@ -102,26 +102,37 @@ export class BulkActionService {
     return await this.bulkActionItemRepository.save(bulkActionItem);
   }
 
+  // async incrementBulkActionStatsAtomic(
+  //   bulkAction: BulkAction,
+  //   counter: ProcessorCounter,
+  // ): Promise<void> {
+  //   const processedItems = counter.successfulItems + counter.failedItems + counter.skippedItems;
+  //   const query = this.dataSource.createQueryBuilder()
+  //     .update(BulkAction)
+  //     .set({
+  //       processedItems: () => "processedItems + :processedItems",
+  //       successfulItems: () => "successfulItems + :successfulItems",
+  //       failedItems: () => "failedItems + :failedItems",
+  //       skippedItems: () => "skippedItems + :skippedItems",
+  //     })
+  //     .where("id = :id", { id: bulkAction.id })
+  //     .setParameters({
+  //       processedItems,
+  //       successfulItems: counter.successfulItems,
+  //       failedItems: counter.failedItems,
+  //       skippedItems: counter.skippedItems,
+  //     });
+  //   await query.execute();
+  // }
+
   async incrementBulkActionStats(
     bulkAction: BulkAction,
     counter: ProcessorCounter,
-  ): Promise<void> {
-    const processedItems = counter.successfulItems + counter.failedItems + counter.skippedItems;
-    const query = this.dataSource.createQueryBuilder()
-      .update(BulkAction)
-      .set({
-        processedItems: () => "processedItems + :processedItems",
-        successfulItems: () => "successfulItems + :successfulItems",
-        failedItems: () => "failedItems + :failedItems",
-        skippedItems: () => "skippedItems + :skippedItems",
-      })
-      .where("id = :id", { id: bulkAction.id })
-      .setParameters({
-        processedItems,
-        successfulItems: counter.successfulItems,
-        failedItems: counter.failedItems,
-        skippedItems: counter.skippedItems,
-      });
-    await query.execute();
+  ): Promise<BulkAction> {
+    bulkAction.processedItems += (counter.successfulItems + counter.failedItems + counter.skippedItems);
+    bulkAction.successfulItems += counter.successfulItems;
+    bulkAction.failedItems += counter.failedItems;
+    bulkAction.skippedItems += counter.skippedItems;
+    return await bulkAction.save();
   }
 }

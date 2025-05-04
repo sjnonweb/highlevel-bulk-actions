@@ -29,44 +29,31 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
   async process(bulkAction: BulkAction): Promise<boolean> {
     const parsed = await this.bulkActionService.parseCsvFile(bulkAction.file);
-    let counter: ProcessorCounter;
     try {
       // trying bulk insert first
       this.logger.log('Processing in bulk mode');
-      counter = await this.processBulk(bulkAction, parsed);
+      await this.processBulk(bulkAction, parsed);
     } catch (error) {
       this.logger.error('An error occurred while processing the job');
       this.logger.error(error);
 
       // failure in bulk save, fallback to sequential processing
       this.logger.log('Falling back to sequential mode');
-      counter = await this.processSqeuential(bulkAction, parsed);
+      await this.processSqeuential(bulkAction, parsed);
     }
-
-    // TODO: use atomic updates for counter
-    // await this.bulkActionService.incrementBulkActionStats(bulkAction, counter);
-    // tried atomic update for these fields to prevent race condition
-    // but there is a error with the query, not enough time to figure it
-    // out right now
-    bulkAction.processedItems += (counter.successfulItems + counter.failedItems + counter.skippedItems);
-    bulkAction.successfulItems += counter.successfulItems;
-    bulkAction.failedItems += counter.failedItems;
-    bulkAction.skippedItems += counter.skippedItems;
-    await bulkAction.save();
-
     return true;
   }
 
   async processSqeuential(
     bulkAction: BulkAction,
     parsed: Record<string, string>[],
-  ): Promise<ProcessorCounter> {
-    const counter = {
-      successfulItems: 0,
-      failedItems: 0,
-      skippedItems: 0,
-    };
+  ): Promise<void> {
     for (const row of parsed) {
+      const counter: ProcessorCounter = {
+        successfulItems: 0,
+        failedItems: 0,
+        skippedItems: 0,
+      };
       let bulkActionItem = await this.bulkActionItemRepository.findOneBy({
         bulkAction: {
           id: bulkAction.id,
@@ -110,16 +97,21 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
           counter.failedItems += 1;
         }
       } finally {
+        // TODO: use atomic updates for counter
+        // await this.bulkActionService.incrementBulkActionStatsAtomic(bulkAction, counter);
+        // tried atomic update for these fields to prevent race condition
+        // but there is a error with the query, not enough time to figure it
+        // out right now
+        await this.bulkActionService.incrementBulkActionStats(bulkAction, counter);
         await bulkActionItem.save();
       }
     }
-    return counter;
   }
 
   async processBulk(
     bulkAction: BulkAction,
     parsed: Record<string, string>[],
-  ): Promise<ProcessorCounter> {
+  ): Promise<void> {
     const bulkActionItems: BulkActionItem[] = [];
     parsed.forEach((row) => {
       bulkActionItems.push(
@@ -151,10 +143,15 @@ export class ContactBulkActionProcessor extends BulkActionProcessor<BulkActionEn
 
     await this.bulkActionItemRepository.save(bulkActionItems);
 
-    return {
+    // TODO: use atomic updates for counter
+    // await this.bulkActionService.incrementBulkActionStatsAtomic(bulkAction, counter);
+    // tried atomic update for these fields to prevent race condition
+    // but there is a error with the query, not enough time to figure it
+    // out right now
+    await this.bulkActionService.incrementBulkActionStats(bulkAction, {
       successfulItems: parsed.length,
       failedItems: 0,
       skippedItems: 0,
-    };
+    });
   }
 }
